@@ -89,6 +89,10 @@ uint16_t SPI_baseAddress = UCB0_BASE;
 #define UCzIFG       ( (spiModule < 10) ? (*((volatile uint8_t *) ((uint16_t)(OFS_UCBxIFG    + SPI_baseAddress)))) : (*((volatile uint8_t *) ((uint16_t)(OFS_UCAxIFG    + SPI_baseAddress)))) )
 #define UCzIE        ( (spiModule < 10) ? (*((volatile uint8_t *) ((uint16_t)(OFS_UCBxIE     + SPI_baseAddress)))) : (*((volatile uint8_t *) ((uint16_t)(OFS_UCAxIE     + SPI_baseAddress)))) )
 
+#ifndef __data16_write_addr
+#define __data16_write_addr(x,y) *(unsigned long int*)(x) = y
+#endif
+
 #if defined(DEFAULT_SPI)
     uint8_t spiModule = DEFAULT_SPI;
 #else
@@ -114,7 +118,9 @@ uint8_t * rxptr;
 uint8_t * txptr;
 uint16_t rxcount = 0;
 uint16_t txcount = 0;
-uint8_t mode = 0; /* mode : 0 - RX and TX  1 - RX only, TX to dummy */
+uint8_t com_mode = 0; /* mode : 0 - RX and TX  1 - RX only, TX to dummy */
+#define COM_MODE_RX  0x1
+#define COM_MODE_DMA 0x2
 
 const uint8_t dummy = 0xFF;
 
@@ -169,7 +175,8 @@ void spi_slave_initialize(const uint8_t mode, const uint8_t datamode)
     default:
         break;
     }
-
+    com_mode = 0;
+    com_mode = COM_MODE_DMA;
 	/* Set pins to SPI mode. */
 #if defined(DEFAULT_SPI)
 #if defined(UCB0_BASE) && defined(SPISCK0_SET_MODE)
@@ -180,6 +187,21 @@ void spi_slave_initialize(const uint8_t mode, const uint8_t datamode)
 		if (mode > 0){
 			pinMode_int(SS0, SPISCK0_SET_MODE);  /* SPISS0_SET_MODE is not defined in pins_enegia.h so hope this has the same */
 		}
+#if defined(__MSP430_HAS_DMA__) && defined(DMA0TSEL__UCB0RXIFG) && defined(DMA0TSEL__UCB0TXIFG)
+		if (com_mode & COM_MODE_DMA){
+			DMACTL0 = DMA0TSEL__UCB0RXIFG;
+			__data16_write_addr((unsigned short) &DMA0SA,(unsigned long)&UCB0RXBUF);
+			//__data16_write_addr((unsigned short) &DMA0DA,(unsigned long)BUF); 
+			//DMA0SZ = xxx;   
+			//DMA0CTL = DMADT_0 + DMADSTINCR + DMASBDB + DMAEN + DMAIE;
+
+			DMACTL0 = DMA1TSEL__UCB0TXIFG;
+			//__data16_write_addr((unsigned short) &DMA1SA,(unsigned long)BUF);
+			__data16_write_addr((unsigned short) &DMA1DA,(unsigned long)&UCB0TXBUF); 
+			//DMA1SZ = xxx;   
+			//DMA1CTL = DMADT_0 + DMASRCINCR + DMASBDB + DMAEN;
+		}
+#endif
 	}
 #endif	
 #if defined(UCB1_BASE) && defined(SPISCK1_SET_MODE)
@@ -190,6 +212,21 @@ void spi_slave_initialize(const uint8_t mode, const uint8_t datamode)
 		if (mode > 0){
 			pinMode_int(SS1, SPISCK1_SET_MODE);  /* SPISS1_SET_MODE is not defined in pins_enegia.h so hope this has the same */
 		}
+#if defined(__MSP430_HAS_DMA__) && defined(DMA0TSEL__UCB1RXIFG) && defined(DMA0TSEL__UCB1TXIFG)
+		if (com_mode & COM_MODE_DMA){
+			DMACTL0 = DMA0TSEL__UCB1RXIFG;
+			__data16_write_addr((unsigned short) &DMA0SA,(unsigned long)&UCB1RXBUF);
+			//__data16_write_addr((unsigned short) &DMA0DA,(unsigned long)BUF); 
+			//DMA0SZ = xxx;   
+			//DMA0CTL = DMADT_0 + DMADSTINCR + DMASBDB + DMAEN + DMAIE;
+
+			DMACTL0 = DMA1TSEL__UCB1TXIFG;
+			//__data16_write_addr((unsigned short) &DMA1SA,(unsigned long)BUF);
+			__data16_write_addr((unsigned short) &DMA1DA,(unsigned long)&UCB1TXBUF); 
+			//DMA1SZ = xxx;   
+			//DMA1CTL = DMADT_0 + DMASRCINCR + DMASBDB + DMAEN;
+		}
+#endif
 	}
 #endif	
 #if defined(UCB2_BASE) && defined(SPISCK2_SET_MODE)
@@ -200,6 +237,21 @@ void spi_slave_initialize(const uint8_t mode, const uint8_t datamode)
 		if (mode > 0){
 			pinMode_int(SS2, SPISCK2_SET_MODE);  /* SPISS2_SET_MODE is not defined in pins_enegia.h so hope this has the same */
 		}
+#if defined(__MSP430_HAS_DMA__) && defined(DMA0TSEL__UCB2RXIFG) && defined(DMA0TSEL__UCB2TXIFG)
+		if (com_mode & COM_MODE_DMA){
+			DMACTL0 = DMB2TSEL__UCA0RXIFG;
+			__data16_write_addr((unsigned short) &DMA0SA,(unsigned long)&UCB2RXBUF);
+			//__data16_write_addr((unsigned short) &DMA0DA,(unsigned long)BUF); 
+			//DMA0SZ = xxx;   
+			//DMA0CTL = DMADT_0 + DMADSTINCR + DMASBDB + DMAEN + DMAIE;
+
+			DMACTL0 = DMA1TSEL__UCB2TXIFG;
+			//__data16_write_addr((unsigned short) &DMA1SA,(unsigned long)BUF);
+			__data16_write_addr((unsigned short) &DMA1DA,(unsigned long)&UCB2TXBUF); 
+			//DMA1SZ = xxx;   
+			//DMA1CTL = DMADT_0 + DMASRCINCR + DMASBDB + DMAEN;
+		}
+#endif
 	}
 #endif	
 #if defined(UCB3_BASE) && defined(SPISCK3_SET_MODE)
@@ -210,6 +262,21 @@ void spi_slave_initialize(const uint8_t mode, const uint8_t datamode)
 		if (mode > 0){
 			pinMode_int(SS3, SPISCK3_SET_MODE);  /* SPISS3_SET_MODE is not defined in pins_enegia.h so hope this has the same */
 		}
+#if defined(__MSP430_HAS_DMA__) && defined(DMA0TSEL__UCB3RXIFG) && defined(DMA0TSEL__UCB3TXIFG)
+		if (com_mode & COM_MODE_DMA){
+			DMACTL0 = DMA0TSEL__UCB3RXIFG;
+			__data16_write_addr((unsigned short) &DMA0SA,(unsigned long)&UCB3RXBUF);
+			//__data16_write_addr((unsigned short) &DMA0DA,(unsigned long)BUF); 
+			//DMA0SZ = xxx;   
+			//DMA0CTL = DMADT_0 + DMADSTINCR + DMASBDB + DMAEN + DMAIE;
+
+			DMACTL0 = DMA1TSEL__UCB3TXIFG;
+			//__data16_write_addr((unsigned short) &DMA1SA,(unsigned long)BUF);
+			__data16_write_addr((unsigned short) &DMA1DA,(unsigned long)&UCB3TXBUF); 
+			//DMA1SZ = xxx;   
+			//DMA1CTL = DMADT_0 + DMASRCINCR + DMASBDB + DMAEN;
+		}
+#endif
 	}
 #endif	
 #if defined(UCA0_BASE) && defined(SPISCK10_SET_MODE)
@@ -220,6 +287,21 @@ void spi_slave_initialize(const uint8_t mode, const uint8_t datamode)
 		if (mode > 0){
 			pinMode_int(SS10, SPISCK10_SET_MODE);  /* SPISS10_SET_MODE is not defined in pins_enegia.h so hope this has the same */
 		}
+#if defined(__MSP430_HAS_DMA__) && defined(DMA0TSEL__UCA0RXIFG) && defined(DMA0TSEL__UCA0TXIFG)
+		if (com_mode & COM_MODE_DMA){
+			DMACTL0 = DMA0TSEL__UCA0RXIFG;
+			__data16_write_addr((unsigned short) &DMA0SA,(unsigned long)&UCA0RXBUF);
+			//__data16_write_addr((unsigned short) &DMA0DA,(unsigned long)BUF); 
+			//DMA0SZ = xxx;   
+			//DMA0CTL = DMADT_0 + DMADSTINCR + DMASBDB + DMAEN + DMAIE;
+
+			DMACTL0 = DMA1TSEL__UCA0TXIFG;
+			//__data16_write_addr((unsigned short) &DMA1SA,(unsigned long)BUF);
+			__data16_write_addr((unsigned short) &DMA1DA,(unsigned long)&UCA0TXBUF); 
+			//DMA1SZ = xxx;   
+			//DMA1CTL = DMADT_0 + DMASRCINCR + DMASBDB + DMAEN;
+		}
+#endif
 	}
 #endif	
 #if defined(UCA1_BASE) && defined(SPISCK11_SET_MODE)
@@ -230,6 +312,21 @@ void spi_slave_initialize(const uint8_t mode, const uint8_t datamode)
 		if (mode > 0){
 			pinMode_int(SS11, SPISCK11_SET_MODE);  /* SPISS11_SET_MODE is not defined in pins_enegia.h so hope this has the same */
 		}
+#if defined(__MSP430_HAS_DMA__) && defined(DMA0TSEL__UCA1RXIFG) && defined(DMA0TSEL__UCA1TXIFG)
+		if (com_mode & COM_MODE_DMA){
+			DMACTL0 = DMA1TSEL__UCA0RXIFG;
+			__data16_write_addr((unsigned short) &DMA0SA,(unsigned long)&UCA1RXBUF);
+			//__data16_write_addr((unsigned short) &DMA0DA,(unsigned long)BUF); 
+			//DMA0SZ = xxx;   
+			//DMA0CTL = DMADT_0 + DMADSTINCR + DMASBDB + DMAEN + DMAIE;
+
+			DMACTL0 = DMA1TSEL__UCA1TXIFG;
+			//__data16_write_addr((unsigned short) &DMA1SA,(unsigned long)BUF);
+			__data16_write_addr((unsigned short) &DMA1DA,(unsigned long)&UCA1TXBUF); 
+			//DMA1SZ = xxx;   
+			//DMA1CTL = DMADT_0 + DMASRCINCR + DMASBDB + DMAEN;
+		}
+#endif
 	}
 #endif	
 #if defined(UCA2_BASE) && defined(SPISCK12_SET_MODE)
@@ -240,6 +337,21 @@ void spi_slave_initialize(const uint8_t mode, const uint8_t datamode)
 		if (mode > 0){
 			pinMode_int(SS12, SPISCK12_SET_MODE);  /* SPISS12_SET_MODE is not defined in pins_enegia.h so hope this has the same */
 		}
+#if defined(__MSP430_HAS_DMA__) && defined(DMA0TSEL__UCA2RXIFG) && defined(DMA0TSEL__UCA2TXIFG)
+		if (com_mode & COM_MODE_DMA){
+			DMACTL0 = DMA1TSEL__UCA2RXIFG;
+			__data16_write_addr((unsigned short) &DMA0SA,(unsigned long)&UCA2RXBUF);
+			//__data16_write_addr((unsigned short) &DMA0DA,(unsigned long)BUF); 
+			//DMA0SZ = xxx;   
+			//DMA0CTL = DMADT_0 + DMADSTINCR + DMASBDB + DMAEN + DMAIE;
+
+			DMACTL0 = DMA1TSEL__UCA20TXIFG;
+			//__data16_write_addr((unsigned short) &DMA1SA,(unsigned long)BUF);
+			__data16_write_addr((unsigned short) &DMA1DA,(unsigned long)&UCA2TXBUF); 
+			//DMA1SZ = xxx;   
+			//DMA1CTL = DMADT_0 + DMASRCINCR + DMASBDB + DMAEN;
+		}
+#endif
 	}
 #endif	
 #if defined(UCA3_BASE) && defined(SPISCK13_SET_MODE)
@@ -259,7 +371,38 @@ void spi_slave_initialize(const uint8_t mode, const uint8_t datamode)
 	if (mode > 0){
 		pinMode_int(SS, SPISCK_SET_MODE); 
 	}
+#ifdef __MSP430_HAS_DMA__
+		if (com_mode & COM_MODE_DMA){
+			DMACTL0 = DMA0TSEL__UCA0RXIFG;
+			__data16_write_addr((unsigned short) &DMA0SA,(unsigned long)&UCA0RXBUF);
+			//__data16_write_addr((unsigned short) &DMA0DA,(unsigned long)BUF); 
+			//DMA0SZ = xxx;   
+			//DMA0CTL = DMADT_0 + DMADSTINCR + DMASBDB + DMAEN + DMAIE;
+
+			DMACTL0 = DMA1TSEL__UCA0TXIFG;
+			//__data16_write_addr((unsigned short) &DMA1SA,(unsigned long)BUF);
+			__data16_write_addr((unsigned short) &DMA1DA,(unsigned long)&UCA0TXBUF); 
+			//DMA1SZ = xxx;   
+			//DMA1CTL = DMADT_0 + DMASRCINCR + DMASBDB + DMAEN;
+		}
 #endif
+#endif
+#if defined(__MSP430_HAS_DMA__) && defined(DMA3TSEL__UCA3RXIFG) && defined(DMA4TSEL__UCA3TXIFG)
+        if (com_mode & COM_MODE_DMA){
+            DMACTL1 = DMA3TSEL__UCA3RXIFG;
+            __data16_write_addr((unsigned short) &DMA3SA,(unsigned long)&UCA3RXBUF);
+            //__data16_write_addr((unsigned short) &DMA0DA,(unsigned long)BUF); 
+            //DMA0SZ = xxx;   
+            //DMA0CTL = DMADT_0 + DMADSTINCR + DMASBDB + DMAEN + DMAIE;
+
+            DMACTL2 = DMA4TSEL__UCA3TXIFG;
+            //__data16_write_addr((unsigned short) &DMA1SA,(unsigned long)BUF);
+            __data16_write_addr((unsigned short) &DMA4DA,(unsigned long)&UCA3TXBUF); 
+            //DMA1SZ = xxx;   
+            //DMA1CTL = DMADT_0 + DMASRCINCR + DMASBDB + DMAEN;
+        }
+#endif
+		
 
 
 	/* Release USCI for operation. */
@@ -281,17 +424,33 @@ void spi_disable(void)
 
 void spi_slave_transfer(uint8_t *rxbuf, uint8_t *txbuf, uint16_t count)
 {
-    rxptr = rxbuf;
-    txptr = txbuf;
-    mode = 0;
-	rxcount = count;
-    txcount = count;
-	while ((UCzIFG & UCTXIFG) && txcount)
-	{
-		*(&(UCzTXBUF)) = *txptr++;  /* put in first character */
-		txcount--;
+#ifdef __MSP430_HAS_DMA__
+	if (com_mode & COM_MODE_DMA){
+		// RXIFG
+		__data16_write_addr((unsigned short) &DMA3DA,(unsigned long)rxbuf); 
+		DMA3SZ = count;   
+		DMA3CTL = DMADT_0 + DMADSTINCR + DMASBDB + DMAEN;
+
+		//TXIFG;
+		__data16_write_addr((unsigned short) &DMA4SA,(unsigned long)txbuf);
+		DMA4SZ = count;   
+		DMA4CTL = DMADT_0 + DMASRCINCR + DMASBDB + DMAEN + DMALEVEL;
 	}
-	UCzIE |= UCRXIE;  /* need to receive data to transmit */
+	else
+#endif
+	{
+		rxptr = rxbuf;
+		txptr = txbuf;
+		com_mode &= ~COM_MODE_RX;
+		rxcount = count;
+		txcount = count;
+		while ((UCzIFG & UCTXIFG) && txcount)
+		{
+			*(&(UCzTXBUF)) = *txptr++;  /* put in first character */
+			txcount--;
+		}
+		UCzIE |= UCRXIE;  /* need to receive data to transmit */
+	}
 }
 
 /**
@@ -303,7 +462,7 @@ void spi_slave_receive(uint8_t *buf, uint16_t count)
     txptr = (uint8_t *) &dummy;
 	rxcount = count;
     txcount = count;
-	mode = 1;
+	com_mode |= COM_MODE_RX;
     while ((UCzIFG & UCTXIFG) )
     {
         *(&(UCzTXBUF)) = dummy;  /* put in first characters */
@@ -313,12 +472,20 @@ void spi_slave_receive(uint8_t *buf, uint16_t count)
 
 int spi_bytes_to_transmit(void)
 {
-   return (rxcount);
+#ifdef __MSP430_HAS_DMA__
+        return (DMA3SZ);
+#else
+        return (!(DMA3CTL & DMAEN) ? 0 : rxcount);
+#endif        
 }
 
 int spi_data_done(void)
 {
-   return (rxcount == 0);
+#ifdef __MSP430_HAS_DMA__
+        return (!(DMA3CTL & DMAEN));
+#else
+        return (rxcount == 0);
+#endif        
 }
 
 
@@ -351,7 +518,7 @@ void spi_rx_isr(uint8_t offset)
     if (txcount){
         if (txptr != 0){
             *(&(UCzTXBUF)) = temp;
-            if (mode == 0){
+            if ((com_mode & COM_MODE_RX) == 0){
                 *txptr++;
             }
             txcount--;
