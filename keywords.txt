@@ -1,0 +1,47 @@
+#######################################
+# Syntax Coloring Map SPISlave
+#######################################
+
+#######################################
+# Datatypes (KEYWORD1)
+#######################################
+
+SPISlave	KEYWORD1
+
+#######################################
+# Methods and Functions (KEYWORD2)
+#######################################
+begin	KEYWORD2
+end	KEYWORD2
+setBitOrder	KEYWORD2
+setDataMode	KEYWORD2
+setClockDivider	KEYWORD2
+
+beginTransaction KEYWORD2
+endTransaction KEYWORD2
+transactionDone KEYWORD2
+bytes_to_transmit KEYWORD2
+transfer	KEYWORD2
+
+setModule KEYWORD2
+attachInterrupt KEYWORD2
+detachInterrupt KEYWORD2
+
+#######################################
+# Constants (LITERAL1)
+#######################################
+SPI_CLOCK_DIV4	LITERAL1
+SPI_CLOCK_DIV16	LITERAL1
+SPI_CLOCK_DIV64	LITERAL1
+SPI_CLOCK_DIV128	LITERAL1
+SPI_CLOCK_DIV2	LITERAL1
+SPI_CLOCK_DIV8	LITERAL1
+SPI_CLOCK_DIV32	LITERAL1
+SPI_CLOCK_DIV64	LITERAL1
+SPI_MODE0	LITERAL1
+SPI_MODE1	LITERAL1
+SPI_MODE2	LITERAL1
+SPI_MODE3	LITERAL1
+MODE_3WIRE LITERAL1
+MODE_4WIRE_STE1 LITERAL1
+MODE_4WIRE_STE0 LITERAL1
