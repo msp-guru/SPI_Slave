@@ -10,7 +10,9 @@
   
 */
 
-uint8_t data = 0;
+#define DATASIZE 10
+uint8_t data[DATASIZE];
+uint8_t datain[DATASIZE];
 
 // include the SPI library:
 #include <SPI.h>
@@ -18,21 +20,56 @@ uint8_t data = 0;
 
 void setup() {
   //Initialize serial 
-  Serial.begin(9600); 
+  Serial.begin(115200);
 
-  // initialize SPI Slave:
-  SPI.begin(); 
+  pinMode(PUSH1, INPUT_PULLUP);
+  pinMode(PUSH2, INPUT_PULLUP);
+
+  // initialize SPI Master:
+  digitalWrite(SS,HIGH);
+  pinMode(SS, OUTPUT);
+  SPI.begin();
+  SPI.setClockDivider(10);
+
+  Serial.println("Master Started");
+
 }
 
-void loop() {
-  
+void sendData() {
+  uint16_t i;
+  static uint16_t count = 0;
+
+  Serial.print("=> "); // new line
+  for (i=0; i < DATASIZE; i++){
+      data[i]= count++;
+      Serial.print(data[i], HEX); // new data
+      Serial.print(" ");
+  }
+  Serial.println(""); // new line
 
   // take the SS pin low to select the chip:
-  digitalWrite(slaveSelectPin,LOW);
-  //  send and receive 2 bytes via SPI:
-  data = SPI.transfer(data++);
-  data = SPI.transfer(data++);
+  digitalWrite(SS,LOW);
+  SPI.transfer((void*)data, DATASIZE);
   // take the SS pin high to de-select the chip:
-  digitalWrite(slaveSelectPin,HIGH); 
+  delay(10);
+  digitalWrite(SS,HIGH);
+
+  Serial.print("<= "); // new line
+  for (i=0; i < DATASIZE; i++){
+      Serial.print(data[i], HEX);   // last received data
+      Serial.print(" ");
+  }
+  Serial.println(""); // new line
+
 }
 
+
+void loop() {
+
+  if (digitalRead(PUSH2)==LOW) {
+    delay(100);
+    while (digitalRead(PUSH2)==LOW);
+    sendData();
+    delay(100);
+  }
+}
