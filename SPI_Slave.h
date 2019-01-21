@@ -100,25 +100,19 @@ extern uint8_t spiModule ;
 class SPISlaveClass {
 public:
   
-  inline static void beginTransaction(SPISlaveSettings settings);
-  inline static void endTransaction(void);
   inline static bool transactionDone(void);
   inline static size_t bytes_to_transmit(void);
   inline static void transfer(uint8_t *buf, size_t count);
   inline static void transfer(uint8_t *rxbuf, uint8_t *txbuf, size_t count);
   
   // SPI Configuration methods
-
   SPISlaveClass(void);
   inline static void begin(); // Default
-  inline static void begin(const uint8_t mode, const uint8_t datamode);
+  inline static void begin(SPISlaveSettings settings);
   inline static void begin(uint8_t module);
-  inline static void begin(const uint8_t mode, const uint8_t datamode, uint8_t module);
+  inline static void begin(SPISlaveSettings settings, uint8_t module);
   inline static void end();
 
-  inline static void setBitOrder(uint8_t);
-  inline static void setDataMode(uint8_t);
-  inline static void setMode(uint8_t);
 
   inline static void attachInterrupt();
   inline static void detachInterrupt();
@@ -128,19 +122,12 @@ public:
 
 extern SPISlaveClass SPISlave;
 
-void SPISlaveClass::beginTransaction(SPISlaveSettings settings) {
-	spi_slave_set_bitorder(settings._bitOrder);
-	spi_slave_set_datamode(settings._datamode);
-	spi_slave_set_mode(settings._mode);
-}
-
-
 void SPISlaveClass::begin(void) {
-    spi_slave_initialize(MODE_4WIRE_STE0, SPI_MODE0);
+    spi_slave_initialize(MODE_4WIRE_STE0, SPI_MODE0, MSBFIRST);
 }
 
-void SPISlaveClass::begin(const uint8_t mode, const uint8_t datamode) {
-    spi_slave_initialize(MODE_4WIRE_STE0, SPI_MODE0);
+void SPISlaveClass::begin(SPISlaveSettings settings) {
+    spi_slave_initialize(settings._mode, settings._datamode, settings._bitOrder);
 }
 
 void SPISlaveClass::begin(uint8_t module) {
@@ -148,9 +135,9 @@ void SPISlaveClass::begin(uint8_t module) {
     begin();
 }
 
-void SPISlaveClass::begin(const uint8_t mode, const uint8_t datamode, uint8_t module) {
+void SPISlaveClass::begin(SPISlaveSettings settings, uint8_t module) {
     SPISlave.setModule(module);
-    begin(mode, datamode);
+    begin(settings);
 }
 
 void SPISlaveClass::transfer(uint8_t *buf, size_t count) {
@@ -171,20 +158,9 @@ size_t SPISlaveClass::bytes_to_transmit(void)
    return (spi_bytes_to_transmit());
 }
 
-// After performing a group of transfers and releasing the chip select
-// signal, this function allows others to access the SPI bus
-void SPISlaveClass::endTransaction(void) {
-    spi_slave_disable();
-}
-
 void SPISlaveClass::end()
 {
     spi_slave_disable();
-}
-
-void SPISlaveClass::setBitOrder(uint8_t bitOrder)
-{
-    spi_slave_set_bitorder(bitOrder);
 }
 
 void SPISlaveClass::attachInterrupt() {

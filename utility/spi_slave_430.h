@@ -26,13 +26,10 @@ extern uint16_t SPI_baseAddress;
 extern uint8_t spiModule;
 
 
-void spi_slave_initialize(const uint8_t, const uint8_t);
+void spi_slave_initialize(const uint8_t, const uint8_t, const uint8_t order);
 void spi_slave_disable(void);
 void spi_slave_transfer(uint8_t *rxbuf, uint8_t *txbuf, uint16_t count);
 void spi_slave_receive(uint8_t *buf, uint16_t count);
-void spi_slave_set_bitorder(const uint8_t);
-void spi_slave_set_mode(const uint8_t);
-void spi_slave_set_datamode(const uint8_t);
 int spi_data_done(void);
 int spi_bytes_to_transmit(void);
 

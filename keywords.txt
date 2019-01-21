@@ -6,19 +6,15 @@
 # Datatypes (KEYWORD1)
 #######################################
 
-SPISlave	KEYWORD1
+SPISlave	        KEYWORD1
+SPISlaveSettings	KEYWORD1
 
 #######################################
 # Methods and Functions (KEYWORD2)
 #######################################
 begin	KEYWORD2
 end	KEYWORD2
-setBitOrder	KEYWORD2
-setDataMode	KEYWORD2
-setClockDivider	KEYWORD2
 
-beginTransaction KEYWORD2
-endTransaction KEYWORD2
 transactionDone KEYWORD2
 bytes_to_transmit KEYWORD2
 transfer	KEYWORD2
