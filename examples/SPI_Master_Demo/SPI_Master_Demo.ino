@@ -17,6 +17,9 @@ uint8_t datain[DATASIZE];
 // include the SPI library:
 #include <SPI.h>
 
+#ifndef SS
+#define SS 5
+#endif
 
 void setup() {
   //Initialize serial 
@@ -49,7 +52,7 @@ void sendData() {
 
   // take the SS pin low to select the chip:
   digitalWrite(SS,LOW);
-  SPI.transfer((void*)data, DATASIZE);
+  SPI.transfer(data, DATASIZE);
   // take the SS pin high to de-select the chip:
   delay(10);
   digitalWrite(SS,HIGH);
