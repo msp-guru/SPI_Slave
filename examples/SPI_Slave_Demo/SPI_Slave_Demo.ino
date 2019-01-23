@@ -39,7 +39,7 @@ void setup() {
 }
 
 void loop() {
-  int8_t i;
+  uint8_t i;
   SPISlave.transfer(txbuffer, sizeof(txbuffer));
   digitalWrite(RED_LED, HIGH);   // set the LED on
   while (SPISlave.bytes_to_transmit() == sizeof(txbuffer));
