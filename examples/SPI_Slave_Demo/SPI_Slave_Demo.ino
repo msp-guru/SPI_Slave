@@ -1,9 +1,10 @@
 /*
   SPI_Slave_Demo
   
-  This example Demos the SPI Slave mode.
+  This example Demos the SPI Slave modewith a variable length of data send in one package
+  between CS pulses.
  
- created 09 Jan 2019
+ created 23 Jan 2019
  by StefanSch
   
 */
@@ -20,6 +21,8 @@ uint8_t rxbuffer[10];
 void setup() {
   pinMode(RED_LED, OUTPUT);
   digitalWrite(RED_LED, LOW);   // set the LED off
+  pinMode(GREEN_LED, OUTPUT);
+  digitalWrite(GREEN_LED, LOW);   // set the LED off
   //Initialize serial 
   Serial.begin(115200);
 
@@ -40,12 +43,18 @@ void setup() {
 
 void loop() {
   uint8_t i;
-  SPISlave.transfer(txbuffer, sizeof(txbuffer));
+  SPISlave.transfer(txbuffer, sizeof(txbuffer));  /* rx buffer = tx buffer */
+
   digitalWrite(RED_LED, HIGH);   // set the LED on
-  while (SPISlave.bytes_to_transmit() == sizeof(txbuffer));
+  while (SPISlave.bytes_received() == 0);
+  while (SPISlave.bytes_received() == 0 && (SPISlave.getCS(STE) == LOW)){
+          digitalWrite(GREEN_LED, HIGH);   // set the LED on
+  }
+  digitalWrite(GREEN_LED, LOW);   // set the LED off
   digitalWrite(RED_LED, LOW);   // set the LED off
-  while(!SPISlave.transactionDone());
-  for (i = 0; i<sizeof(txbuffer); i++){
+
+  Serial.print("=> "); // data received
+  for (i = 0; i<SPISlave.bytes_received(); i++){
       Serial.print(txbuffer[i], HEX);
       Serial.print(" ");
   }

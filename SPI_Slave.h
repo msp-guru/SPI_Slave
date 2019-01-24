@@ -102,6 +102,8 @@ public:
   
   inline static bool transactionDone(void);
   inline static size_t bytes_to_transmit(void);
+  inline static size_t bytes_received(void);
+  inline static int getCS (uint8_t pin);
   inline static void transfer(uint8_t *buf, size_t count);
   inline static void transfer(uint8_t *rxbuf, uint8_t *txbuf, size_t count);
   
@@ -153,9 +155,25 @@ bool SPISlaveClass::transactionDone(void)
    return (spi_data_done());
 }
 
+int SPISlaveClass::getCS (uint8_t pin)
+{
+   uint8_t bit = digitalPinToBitMask(pin);
+   uint8_t port = digitalPinToPort(pin);
+
+   if (port == NOT_A_PORT) return LOW;
+
+   if (*portInputRegister(port) & bit) return HIGH;
+   return LOW;
+}
+
 size_t SPISlaveClass::bytes_to_transmit(void)
 {
    return (spi_bytes_to_transmit());
+}
+
+size_t SPISlaveClass::bytes_received(void)
+{
+   return (spi_bytes_received());
 }
 
 void SPISlaveClass::end()

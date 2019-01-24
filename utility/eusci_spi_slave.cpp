@@ -123,6 +123,7 @@ uint8_t * rxptr;
 uint8_t * txptr;
 uint16_t rxcount = 0;
 uint16_t txcount = 0;
+uint16_t rxrecived = 0;
 uint8_t com_mode = 0; /* mode : 0 - RX and TX  1 - RX only, TX to dummy */
 #define COM_MODE_RX  0x1
 #define COM_MODE_DMA 0x2
@@ -411,17 +412,25 @@ void spi_disable(void)
 
 void spi_slave_transfer(uint8_t *rxbuf, uint8_t *txbuf, uint16_t count)
 {
+    rxcount = count;
+    txcount = count;
+    rxrecived = 0;
 #ifdef __MSP430_HAS_DMA__
 	if (com_mode & COM_MODE_DMA){
+        HWREG16(DMA_BASE + OFS_DMA0CTL + dma_idx) = 0;
+        HWREG16(DMA_BASE + OFS_DMA1CTL + dma_idx) = 0;
+	    /* Toggle USCI reset mode to flush TX pipe */
+	    UCzCTLW0 |= UCSWRST;
+        UCzCTLW0 &= ~UCSWRST;
 		// RXIFG
 		__data16_write_addr((unsigned short)(DMA_BASE + OFS_DMA0DA + dma_idx),(unsigned long)rxbuf); 
 		HWREG16(DMA_BASE + OFS_DMA0SZ  + dma_idx) = count;   
-		HWREG16(DMA_BASE + OFS_DMA0CTL + dma_idx) = DMADT_0 + DMADSTINCR + DMASBDB + DMAEN;
+		HWREG16(DMA_BASE + OFS_DMA0CTL + dma_idx) = DMADT_0 + DMADSTINCR + DMASBDB + DMALEVEL + DMAEN;
 
 		//TXIFG;
 		__data16_write_addr((unsigned short)(DMA_BASE + OFS_DMA1SA + dma_idx),(unsigned long)txbuf);
 		HWREG16(DMA_BASE + OFS_DMA1SZ  + dma_idx) = count;   
-		HWREG16(DMA_BASE + OFS_DMA1CTL + dma_idx) = DMADT_0 + DMASRCINCR + DMASBDB + DMAEN + DMALEVEL;
+		HWREG16(DMA_BASE + OFS_DMA1CTL + dma_idx) = DMADT_0 + DMASRCINCR + DMASBDB + DMALEVEL + DMAEN;
 	}
 	else
 #endif
@@ -429,8 +438,6 @@ void spi_slave_transfer(uint8_t *rxbuf, uint8_t *txbuf, uint16_t count)
 		rxptr = rxbuf;
 		txptr = txbuf;
 		com_mode &= ~COM_MODE_RX;
-		rxcount = count;
-		txcount = count;
 		while ((UCzIFG & UCTXIFG) && txcount)
 		{
 			*(&(UCzTXBUF)) = *txptr++;  /* put in first character */
@@ -445,31 +452,70 @@ void spi_slave_transfer(uint8_t *rxbuf, uint8_t *txbuf, uint16_t count)
  */
 void spi_slave_receive(uint8_t *buf, uint16_t count)
 {
-    rxptr = buf;
-    txptr = (uint8_t *) &dummy;
-	rxcount = count;
+    rxcount = count;
     txcount = count;
-	com_mode |= COM_MODE_RX;
-    while ((UCzIFG & UCTXIFG) )
-    {
-        *(&(UCzTXBUF)) = dummy;  /* put in first characters */
+    rxrecived = 0;
+#ifdef __MSP430_HAS_DMA__
+    if (com_mode & COM_MODE_DMA){
+        HWREG16(DMA_BASE + OFS_DMA0CTL + dma_idx) = 0;
+        HWREG16(DMA_BASE + OFS_DMA1CTL + dma_idx) = 0;
+        /* Toggle USCI reset mode to flush TX pipe */
+        UCzCTLW0 |= UCSWRST;
+        UCzCTLW0 &= ~UCSWRST;
+        // RXIFG
+        __data16_write_addr((unsigned short)(DMA_BASE + OFS_DMA0DA + dma_idx),(unsigned long)buf);
+        HWREG16(DMA_BASE + OFS_DMA0SZ  + dma_idx) = count;
+        HWREG16(DMA_BASE + OFS_DMA0CTL + dma_idx) = DMADT_0 + DMADSTINCR + DMASBDB + DMALEVEL + DMAEN;
+
+        //TXIFG;
+        __data16_write_addr((unsigned short)(DMA_BASE + OFS_DMA1SA + dma_idx),(unsigned long)&dummy);
+        HWREG16(DMA_BASE + OFS_DMA1SZ  + dma_idx) = count;
+        HWREG16(DMA_BASE + OFS_DMA1CTL + dma_idx) = DMADT_0 + DMASBDB + DMALEVEL + DMAEN;
     }
-	UCzIE |= UCRXIE;  /* need to receive data to transmit */
+    else
+#endif
+    {
+        rxptr = buf;
+        txptr = (uint8_t *) &dummy;
+        com_mode |= COM_MODE_RX;
+        while ((UCzIFG & UCTXIFG) )
+        {
+            *(&(UCzTXBUF)) = dummy;  /* put in first characters */
+        }
+        UCzIE |= UCRXIE;  /* need to receive data to transmit */
+    }
 }
 
 int spi_bytes_to_transmit(void)
 {
 #ifdef __MSP430_HAS_DMA__
-        return (DMA3SZ);
+    // when DMA enabled return DMAxSZ else done return 0
+    return ((HWREG16(DMA_BASE + OFS_DMA1CTL + dma_idx) & DMAEN) ? HWREG16(DMA_BASE + OFS_DMA1SZ + dma_idx) : 0);
 #else
-        return (!(DMA3CTL & DMAEN) ? 0 : rxcount);
+    return (txcount);
 #endif        
 }
+
+
+int spi_bytes_received(void)
+{
+#ifdef __MSP430_HAS_DMA__
+    // when DMA enabled return DMAxSZ else done return 0
+    if (com_mode & COM_MODE_DMA){
+        return ((HWREG16(DMA_BASE + OFS_DMA0CTL + dma_idx) & DMAEN) ? (rxcount - HWREG16(DMA_BASE + OFS_DMA0SZ + dma_idx)) : rxcount);
+    }else{
+        return (rxrecived);
+    }
+#else
+    return (rxrecived);
+#endif        
+}
+
 
 int spi_data_done(void)
 {
 #ifdef __MSP430_HAS_DMA__
-        return (!(DMA3CTL & DMAEN));
+        return (!(HWREG16(DMA_BASE + OFS_DMA0CTL + dma_idx) & DMAEN));
 #else
         return (rxcount == 0);
 #endif        
@@ -484,6 +530,7 @@ void spi_rx_isr(uint8_t offset)
 		if (rxptr != 0){
 			*rxptr++ = *(&(UCzRXBUF));
 	        rxcount--;
+	        rxrecived++;
 		}
 	}else{
 	    UCzIE &= ~UCRXIE;  /* disable interrupt */
