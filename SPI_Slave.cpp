@@ -29,51 +29,61 @@ void SPISlaveClass::setModule(uint8_t module)
 #if defined(__MSP430_HAS_EUSCI_B0__)
    if (module == 0)
    {
-      SPI_baseAddress = UCB0_BASE;
+      SPI_slave_baseAddress= UCB0_BASE;
    }
 #endif
 #if defined(__MSP430_HAS_EUSCI_B1__)
    if (module == 1)
    {
-      SPI_baseAddress = UCB1_BASE;
+      SPI_slave_baseAddress= UCB1_BASE;
    }
 #endif
 #if defined(__MSP430_HAS_EUSCI_B2__)
    if (module == 2)
    {
-      SPI_baseAddress = UCB2_BASE;
+      SPI_slave_baseAddress= UCB2_BASE;
    }
 #endif
 #if defined(__MSP430_HAS_EUSCI_B3__)
    if (module == 3)
    {
-      SPI_baseAddress = UCB3_BASE;
+      SPI_slave_baseAddress= UCB3_BASE;
    }
 #endif
 #if defined(__MSP430_HAS_EUSCI_A0__)
    if (module == 10)
    {
-      SPI_baseAddress = UCA0_BASE;
+      SPI_slave_baseAddress= UCA0_BASE;
    }
 #endif
 #if defined(__MSP430_HAS_EUSCI_A1__)
    if (module == 11)
    {
-      SPI_baseAddress = UCA1_BASE;
+      SPI_slave_baseAddress= UCA1_BASE;
    }
 #endif
 #if defined(__MSP430_HAS_EUSCI_A2__)
    if (module == 12)
    {
-      SPI_baseAddress = UCA2_BASE;
+      SPI_slave_baseAddress= UCA2_BASE;
    }
 #endif
 #if defined(__MSP430_HAS_EUSCI_A3__)
    if (module == 13)
    {
-      SPI_baseAddress = UCA3_BASE;
+      SPI_slave_baseAddress= UCA3_BASE;
    }
 #endif
+}
+
+void setModule(uint8_t module, uint8_t sck , uint8_t mosi , uint8_t miso , uint8_t cs)
+{
+    pinMode_int(sck,  PORT_SELECTION0); // SCK
+    pinMode_int(mosi, PORT_SELECTION0); // MOSI
+    pinMode_int(miso, PORT_SELECTION0); // MISO
+	if (cs > 0) pinMode_int(cs,   PORT_SELECTION0); // STE=/CS
+	
+	SPISlave.setModule(module);
 }
 
 /*

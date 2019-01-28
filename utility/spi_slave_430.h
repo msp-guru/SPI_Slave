@@ -1,6 +1,8 @@
 /*
- * spi_430.h - common function declarations for different SPI implementations
+ * spi_slave_430.h - common function declarations for different SPI Slave implementations
  *
+ * spi slave implementation by StefanSch
+ * based on:
  * Copyright (c) 2012 by Rick Kimball <rick@kimballsoftware.com>
  * spi abstraction api for msp430
  *

@@ -1,8 +1,10 @@
 /**
- * File: usci_spi.c - msp430 USCI SPI implementation
+ * File: usci_spi_slave.c - msp430 USCI SPI Slave implementation
  *
+ * USCI flavor implementation by StefanSch
+ * based on:
  * Copyright (c) 2012 by Rick Kimball <rick@kimballsoftware.com>
- * spi abstraction api for msp430
+ * spi slave abstraction api for msp430
  *
  * This file is free software; you can redistribute it and/or modify
  * it under the terms of either the GNU General Public License version 2
@@ -15,8 +17,19 @@
 #include <stdint.h>
 #include "spi_slave_430.h"
 #include <Energia.h>
+#include "usci_isr_handler.h"
 
 #if defined(__MSP430_HAS_USCI_B0__) || defined(__MSP430_HAS_USCI_B1__) || defined(__MSP430_HAS_USCI__)
+#ifndef __data16_write_addr
+#define __data16_write_addr(x,y) *(unsigned long int*)(x) = y
+#endif
+
+#if defined(DEFAULT_SPI)
+    uint8_t spiModule = DEFAULT_SPI;
+#else
+    uint8_t spiModule = 0;
+#endif
+
 
 /**
  * USCI flags for various the SPI MODEs
@@ -33,23 +46,79 @@
 
 #define SPI_MODE_MASK (UCCKPL | UCCKPH)
 
+uint8_t * rxptr;
+uint8_t * txptr;
+uint16_t rxcount = 0;
+uint16_t txcount = 0;
+uint16_t rxrecived = 0;
+uint8_t com_mode = 0; /* mode : 0 - RX and TX  1 - RX only, TX to dummy */
+#define COM_MODE_RX  0x1
+#define COM_MODE_DMA 0x2
+
+const uint8_t dummy = 0xFF;
+
 /**
  * spi_slave_initialize() - Configure USCI UCB0 for SPI mode
  *
- * P2.0 - CS (active low)
- * P1.5 - SCLK
- * P1.6 - MISO aka SOMI
- * P1.7 - MOSI aka SIMO
+ * Pxx - CS (active low)
+ * Pxx - SCLK
+ * Pxx - MISO aka SOMI
+ * Pxx - MOSI aka SIMO
  *
  */
 
-
-void spi_slave_initialize(const uint8_t mode)
+void spi_slave_initialize(const uint8_t mode, const uint8_t datamode, const uint8_t order)
 {
 	UCB0CTL1 = UCSWRST;      // Put USCI in reset mode, source USCI clock from SMCLK
 	UCB0CTL0 = SPI_MODE_0 | UCMSB | UCSYNC | UCMODE_1;  // Use SPI MODE 0 - CPOL=0 CPHA=0 - 4 wire STE = 1
-	spi_slave_set_mode(mode);
 
+    /* Calling this dummy function prevents the linker
+     * from stripping the USCI interupt vectors.*/ 
+    usci_isr_install();
+	
+	/* Put USCI in reset mode, source USCI clock from SMCLK. */
+	UCB0CTL1 = UCSWRST;
+
+	/* SPI in slave MODE 0 - CPOL=0 SPHA=0. - 3 wire STE */
+	UCB0CTL0 |= UCSYNC;
+	
+	UCB0CTL0 = (UCB0CTL0 & ~UCMSB) | ((order == 1 /*MSBFIRST*/) ? UCMSB : 0); /* MSBFIRST = 1 */
+
+    switch(mode) {
+    case 0: /* 3 wire  */
+        UCB0CTL0 |= UCMODE_0;
+        break;
+    case 1: /* 4 wire STE = 1 */
+        UCB0CTL0 |= UCMODE_1;
+        break;
+    case 2: /* 4 wire STE = 0 */
+        UCB0CTL0 |= UCMODE_2;
+        break;
+    default:
+        break;
+    }
+
+    switch(datamode) {
+    case 0: /* SPI_MODE0 */
+        UCB0CTL0 |= SPI_MODE_0;
+        break;
+    case 1: /* SPI_MODE1 */
+        UCB0CTL0 |= SPI_MODE_1;
+        break;
+    case 2: /* SPI_MODE2 */
+        UCB0CTL0 |= SPI_MODE_2;
+        break;
+    case 3: /* SPI_MODE3 */
+        UCB0CTL0 |= SPI_MODE_3;
+        break;
+    default:
+        break;
+    }
+#if defined(DMA_BASE)
+    com_mode = COM_MODE_DMA;
+#else	
+    com_mode = 0;
+#endif
  	/* Set pins to SPI mode. */
 	pinMode_int(SCK, SPISCK_SET_MODE);
 	pinMode_int(MOSI, SPIMOSI_SET_MODE);
@@ -57,182 +126,172 @@ void spi_slave_initialize(const uint8_t mode)
 	if (mode > 0){
 		pinMode_int(SS, SPISCK_SET_MODE);  /* SPISS_SET_MODE is not defined in pins_enegia.h so hope this has the same */
 	}
+#if defined(DMA_BASE) && defined(DMA0TSEL__UCA0RXIFG) && defined(DMA1TSEL__UCA0TXIFG)
+		if (com_mode & COM_MODE_DMA){
+			DMACTL0 = DMA0TSEL__UCA0RXIFG;
+			__data16_write_addr((unsigned short)(DMA0SA),(unsigned long)&UCA0RXBUF);
 
+			DMACTL0 = DMA1TSEL__UCA0TXIFG;
+			__data16_write_addr((unsigned short)(DMA1DA),(unsigned long)&UCA0TXBUF); 
+		}
+#endif
+
+	/* Release USCI for operation. */
 	UCB0CTL1 &= ~UCSWRST;			    // release USCI for operation
 }
 
+
 /**
- * spi_slave_disable() - put USCI into reset mode
+ * spi_slave_disable() - put USCI into reset mode.
  */
 void spi_slave_disable(void)
 {
-    UCB0CTL1 |= UCSWRST;                // Put USCI in reset mode
+	/* Wait for previous tx to complete. */
+	while (UCB0STAT & UCBUSY);
+	/* Put USCI in reset mode. */
+	UCB0CTL1 |= UCSWRST;
 }
 
 /**
- * spi_slave_send() - send a byte and recv response
+ * spi_slave_transfer() - send a bytes and recv response.
  */
-uint8_t spi_slave_send(const uint8_t _data)
+
+void spi_slave_transfer(uint8_t *rxbuf, uint8_t *txbuf, uint16_t count)
 {
-	UCB0TXBUF = _data; // setting TXBUF clears the TXIFG flag
-	while (UCB0STAT & UCBUSY)
-		; // wait for SPI TX/RX to finish
+    rxcount = count;
+    txcount = count;
+    rxrecived = 0;
+#ifdef DMA_BASE
+	if (com_mode & COM_MODE_DMA){
+        DMA0CTL= 0;
+        DMA1CTL = 0;
+	    /* Toggle USCI reset mode to flush TX pipe */
+	    UCB0CTL1 |= UCSWRST;
+        UCB0CTL1 &= ~UCSWRST;
+		// RXIFG
+		__data16_write_addr((unsigned short)(DMA0DA),(unsigned long)rxbuf); 
+		DMA0SZ  = count;   
+		DMA0CTL = DMADT_0 + DMADSTINCR_3 + DMASBDB + DMALEVEL + DMAEN;
 
-	return UCB0RXBUF; // reading clears RXIFG flag
-}
-
-#ifdef UC0IFG
-/* redefine or older 2xx devices where the flags are in SFR */
-#define UCB0IFG  UC0IFG   
-#define UCRXIFG  UCB0RXIFG
-#define UCTXIFG  UCB0TXIFG
+		//TXIFG;
+		__data16_write_addr((unsigned short)(DMA1SA),(unsigned long)txbuf);
+		DMA1SZ  = count;   
+		DMA1CTL = DMADT_0 + DMASRCINCR_3 + DMASBDB + DMALEVEL + DMAEN;
+	}
+	else
 #endif
-
-uint16_t spi_slave_send16(const uint16_t data)
-{
-	uint16_t datain;
-	/* Wait for previous tx to complete. */
-	while (!(UCB0IFG & UCTXIFG));
-	/* Setting TXBUF clears the TXIFG flag. */
-	UCB0TXBUF = data | 0xFF;
-	/* Wait for previous tx to complete. */
-	while (!(UCB0IFG & UCTXIFG));
-
-	datain = UCB0RXBUF << 8;
-	/* Setting TXBUF clears the TXIFG flag. */
-	UCB0TXBUF = data >> 8;
-
-	/* Wait for a rx character? */
-	while (!(UCB0IFG & UCRXIFG));
-
-	/* Reading clears RXIFG flag. */
-	return (datain | UCB0RXBUF);
-}
-
-void spi_slave_send(void *buf, uint16_t count)
-{
-    uint8_t *ptx = (uint8_t *)buf;
-    uint8_t *prx = (uint8_t *)buf;
-	if (count == 0) return;
-	/* Wait for previous tx to complete. */
-	while (!(UCB0IFG & UCTXIFG));
-	while(count){
-		if (UCB0IFG & UCRXIFG){
-			/* Reading RXBUF clears the RXIFG flag. */
-			*prx++ = UCB0RXBUF;
+	{
+		rxptr = rxbuf;
+		txptr = txbuf;
+		com_mode &= ~COM_MODE_RX;
+		while ((UCB0IFG & UCTXIFG) && txcount)
+		{
+			*(&(UCB0TXBUF)) = *txptr++;  /* put in first character */
+			txcount--;
 		}
-		if (UCB0IFG & UCTXIFG){
-			/* Setting TXBUF clears the TXIFG flag. */
-			UCB0TXBUF = *ptx++;
-			count--;
-		}
+		UCB0IE |= UCRXIE;  /* need to receive data to transmit */
 	}
-	/* Wait for last rx character? */
-	while (!(UCB0IFG & UCRXIFG));
-	*prx++ = UCB0RXBUF;
 }
 
 /**
- * spi_slave_transmit() - send a byte
+ * spi_slave_receive() - send a bytes.
  */
-void spi_slave_transmit(const uint8_t _data)
+void spi_slave_receive(uint8_t *buf, uint16_t count)
 {
-	UCB0TXBUF = _data; // setting TXBUF clears the TXIFG flag
+    rxcount = count;
+    txcount = count;
+    rxrecived = 0;
+#ifdef DMA_BASE
+    if (com_mode & COM_MODE_DMA){
+        DMA0CTL = 0;
+        DMA1CTL = 0;
+        /* Toggle USCI reset mode to flush TX pipe */
+        UCB0CTL1 |= UCSWRST;
+        UCB0CTL1 &= ~UCSWRST;
+        // RXIFG
+        __data16_write_addr((unsigned short)(DMA0DA),(unsigned long)buf);
+        DMA0SZ  = count;
+        DMA0CTL = DMADT_0 + DMADSTINCR_3 + DMASBDB + DMALEVEL + DMAEN;
 
-	while (UCB0STAT & UCBUSY); // wait for SPI TX/RX to finish
-	// clear RXIFG flag
-	UCB0IFG &= ~UCRXIFG;
-}
-
-void spi_slave_transmit16(const uint16_t data)
-{
-	/* Wait for previous tx to complete. */
-	while (!(UCB0IFG & UCTXIFG));
-	/* Setting TXBUF clears the TXIFG flag. */
-	UCB0TXBUF = data | 0xFF;
-	/* Wait for previous tx to complete. */
-	while (!(UCB0IFG & UCTXIFG));
-	/* Setting TXBUF clears the TXIFG flag. */
-	UCB0TXBUF = data >> 8;
-
-	while (UCB0STAT & UCBUSY); // wait for SPI TX/RX to finish
-	// clear RXIFG flag
-	UCB0IFG &= ~UCRXIFG;
-}
-
-void spi_slave_transmit(void *buf, uint16_t count)
-{
-    uint8_t *ptx = (uint8_t *)buf;
-	if (count == 0) return;
-	while(count){
-		if (UCB0IFG & UCTXIFG){
-			/* Setting TXBUF clears the TXIFG flag. */
-			UCB0TXBUF = *ptx++;
-			count--;
-		}
-	}
-	while (UCB0STAT & UCBUSY); // wait for SPI TX/RX to finish
-	// clear RXIFG flag
-	UCB0IFG &= ~UCRXIFG;
-}
-
-
-/**
- * spi_slave_set_bitorder(LSBFIRST=0 | MSBFIRST=1)
- */
-void spi_slave_set_bitorder(const uint8_t order)
-{
-    UCB0CTL1 |= UCSWRST;        // go into reset state
-    UCB0CTL0 = (UCB0CTL0 & ~UCMSB) | ((order == 1 /*MSBFIRST*/) ? UCMSB : 0); /* MSBFIRST = 1 */
-    UCB0CTL1 &= ~UCSWRST;       // release for operation
-}
-
-/**
- * spi_slave_set_mode() - mode 0 - 3
- */
-void spi_slave_set_mode(const uint8_t mode)
-{
-    UCB0CTL1 |= UCSWRST;        // go into reset state
-    switch(mode) {
-    case 0: /* SPI_MODE0 */
-		UCB0CTL0 = (UCB0CTL0 & ~UCMODE_3) | UCMODE_0;
-        break;
-    case 1: /* SPI_MODE1 */
-		UCB0CTL0 = (UCB0CTL0 & ~UCMODE_3) | UCMODE_1;
-        break;
-    case 2: /* SPI_MODE2 */
-		UCB0CTL0 = (UCB0CTL0 & ~UCMODE_3) | UCMODE_2;
-        break;
-    default:
-        break;
+        //TXIFG;
+        __data16_write_addr((unsigned short)(DMA1SA),(unsigned long)&dummy);
+        DMA1SZ  = count;
+        DMA1CTL = DMADT_0 + DMASBDB + DMALEVEL + DMAEN;
     }
-    UCB0CTL1 &= ~UCSWRST;       // release for operation
+    else
+#endif
+    {
+        rxptr = buf;
+        txptr = (uint8_t *) &dummy;
+        com_mode |= COM_MODE_RX;
+        while ((UCB0IFG & UCTXIFG) )
+        {
+            *(&(UCB0TXBUF)) = dummy;  /* put in first characters */
+        }
+        UCB0IE |= UCRXIE;  /* need to receive data to transmit */
+    }
 }
 
-/**
- * spi_slave_set_datamode() - datamode 0 - 3
- */
-void spi_slave_set_datamode(const uint8_t datamode)
+int spi_bytes_to_transmit(void)
 {
-    UCB0CTL1 |= UCSWRST;        // go into reset state
-    switch(datamode) {
-    case 0: /* SPI_MODE0 */
-        UCB0CTL0 = (UCB0CTL0 & ~SPI_MODE_MASK) | SPI_MODE_0;
-        break;
-    case 1: /* SPI_MODE1 */
-        UCB0CTL0 = (UCB0CTL0 & ~SPI_MODE_MASK) | SPI_MODE_1;
-        break;
-    case 2: /* SPI_MODE2 */
-        UCB0CTL0 = (UCB0CTL0 & ~SPI_MODE_MASK) | SPI_MODE_2;
-        break;
-    case 3: /* SPI_MODE3 */
-        UCB0CTL0 = (UCB0CTL0 & ~SPI_MODE_MASK) | SPI_MODE_3;
-        break;
-    default:
-        break;
-    }
-    UCB0CTL1 &= ~UCSWRST;       // release for operation
-}
+#ifdef DMA_BASE
+    // when DMA enabled return DMAxSZ else done return 0
+    return ((DMA1CTL & DMAEN) ? DMA1SZ : 0);
 #else
-    //#error "Error! This device doesn't have a USCI peripheral"
+    return (txcount);
+#endif        
+}
+
+
+int spi_bytes_received(void)
+{
+#ifdef DMA_BASE
+    // when DMA enabled return DMAxSZ else done return 0
+    if (com_mode & COM_MODE_DMA){
+        return ((DMA0CTL & DMAEN) ? (rxcount - DMA0SZ) : rxcount);
+    }else{
+        return (rxrecived);
+    }
+#else
+    return (rxrecived);
+#endif        
+}
+
+
+int spi_data_done(void)
+{
+#ifdef DMA_BASE
+        return (!(DMA0CTL & DMAEN));
+#else
+        return (rxcount == 0);
+#endif        
+}
+
+
+void spi_rx_isr(uint8_t offset)
+{
+	uint8_t temp;
+    temp = *txptr; // store in case tx and rx ptr are identical
+	if (rxcount){
+		if (rxptr != 0){
+			*rxptr++ = *(&(UCB0RXBUF));
+	        rxcount--;
+	        rxrecived++;
+		}
+	}else{
+	    UCB0IE &= ~UCRXIE;  /* disable interrupt */
+	}
+    if (txcount){
+        if (txptr != 0){
+            *(&(UCB0TXBUF)) = temp;
+            if ((com_mode & COM_MODE_RX) == 0){
+                txptr++;
+            }
+            txcount--;
+        }
+    }
+	
+}
+
 #endif
+	

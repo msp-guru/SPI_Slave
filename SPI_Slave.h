@@ -113,6 +113,7 @@ public:
   inline static void begin(SPISlaveSettings settings);
   inline static void begin(uint8_t module);
   inline static void begin(SPISlaveSettings settings, uint8_t module);
+  inline static void begin(SPISlaveSettings settings, uint8_t module, uint8_t sck, uint8_t mosi, uint8_t miso, uint8_t cs);
   inline static void end();
 
 
@@ -120,6 +121,7 @@ public:
   inline static void detachInterrupt();
 
   void setModule(uint8_t);
+  void setModule(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t);
 };
 
 extern SPISlaveClass SPISlave;
@@ -139,6 +141,11 @@ void SPISlaveClass::begin(uint8_t module) {
 
 void SPISlaveClass::begin(SPISlaveSettings settings, uint8_t module) {
     SPISlave.setModule(module);
+    begin(settings);
+}
+
+void SPISlaveClass::begin(SPISlaveSettings settings, uint8_t module, uint8_t sck, uint8_t mosi, uint8_t miso, uint8_t cs) {
+    SPISlave.setModule(module, sck, mosi, miso, cs);
     begin(settings);
 }
 

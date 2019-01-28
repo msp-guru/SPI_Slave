@@ -1,9 +1,10 @@
 /**
- * File: eusci_spi.c - msp430 USCI SPI implementation
+ * File: eusci_spi_slave.c - msp430 eUSCI SPI Slave implementation
  *
- * EUSCI flavor implementation by Robert Wessels <robertinant@yahoo.com>
+ * EUSCI flavor implementation by StefanSch
+ * based on:
  * Copyright (c) 2012 by Rick Kimball <rick@kimballsoftware.com>
- * spi abstraction api for msp430
+ * spi slave abstraction api for msp430
  *
  * This file is free software; you can redistribute it and/or modify
  * it under the terms of either the GNU General Public License version 2
@@ -50,31 +51,31 @@
 
 #if defined(DEFAULT_SPI)
 #if (DEFAULT_SPI == 0)
-uint16_t SPI_baseAddress = UCB0_BASE;
+uint16_t SPI_slave_baseAddress= UCB0_BASE;
 #endif	
 #if (DEFAULT_SPI == 1)
-uint16_t SPI_baseAddress = UCB1_BASE;
+uint16_t SPI_slave_baseAddress= UCB1_BASE;
 #endif	
 #if (DEFAULT_SPI == 2)
-uint16_t SPI_baseAddress = UCB2_BASE;
+uint16_t SPI_slave_baseAddress= UCB2_BASE;
 #endif	
 #if (DEFAULT_SPI == 3)
-uint16_t SPI_baseAddress = UCB3_BASE;
+uint16_t SPI_slave_baseAddress= UCB3_BASE;
 #endif	
 #if (DEFAULT_SPI == 10)
-uint16_t SPI_baseAddress = UCA0_BASE;
+uint16_t SPI_slave_baseAddress= UCA0_BASE;
 #endif	
 #if (DEFAULT_SPI == 11)
-uint16_t SPI_baseAddress = UCA1_BASE;
+uint16_t SPI_slave_baseAddress= UCA1_BASE;
 #endif	
 #if (DEFAULT_SPI == 12)
-uint16_t SPI_baseAddress = UCA2_BASE;
+uint16_t SPI_slave_baseAddress= UCA2_BASE;
 #endif
 #if (DEFAULT_SPI == 13)
-uint16_t SPI_baseAddress = UCA3_BASE;
+uint16_t SPI_slave_baseAddress= UCA3_BASE;
 #endif	
 #else
-uint16_t SPI_baseAddress = UCB0_BASE;
+uint16_t SPI_slave_baseAddress= UCB0_BASE;
 #endif
 
 
@@ -194,7 +195,7 @@ void spi_slave_initialize(const uint8_t mode, const uint8_t datamode, const uint
 	/* Set pins to SPI mode. */
 #if defined(DEFAULT_SPI)
 #if defined(UCB0_BASE)
-	if (SPI_baseAddress == UCB0_BASE) {
+	if (SPI_slave_baseAddress== UCB0_BASE) {
 #if defined(UCB0_BASE) && defined(SPISCK0_SET_MODE)
 		pinMode_int(SCK0, SPISCK0_SET_MODE);
 		pinMode_int(MOSI0, SPIMOSI0_SET_MODE);
@@ -216,7 +217,7 @@ void spi_slave_initialize(const uint8_t mode, const uint8_t datamode, const uint
 	}
 #endif	
 #if defined(UCB1_BASE)
-	if (SPI_baseAddress == UCB1_BASE) {
+	if (SPI_slave_baseAddress== UCB1_BASE) {
 #if defined(UCB1_BASE) && defined(SPISCK1_SET_MODE)
 		pinMode_int(SCK1, SPISCK1_SET_MODE);
 		pinMode_int(MOSI1, SPIMOSI1_SET_MODE);
@@ -238,7 +239,7 @@ void spi_slave_initialize(const uint8_t mode, const uint8_t datamode, const uint
 	}
 #endif	
 #if defined(UCB2_BASE)
-	if (SPI_baseAddress == UCB2_BASE) {
+	if (SPI_slave_baseAddress== UCB2_BASE) {
 #if defined(UCB2_BASE) && defined(SPISCK2_SET_MODE)
 		pinMode_int(SCK2, SPISCK2_SET_MODE);
 		pinMode_int(MOSI2, SPIMOSI2_SET_MODE);
@@ -260,7 +261,7 @@ void spi_slave_initialize(const uint8_t mode, const uint8_t datamode, const uint
 	}
 #endif	
 #if defined(UCB3_BASE)
-	if (SPI_baseAddress == UCB3_BASE) {
+	if (SPI_slave_baseAddress== UCB3_BASE) {
 #if defined(UCB3_BASE) && defined(SPISCK3_SET_MODE)
 		pinMode_int(SCK3, SPISCK3_SET_MODE);
 		pinMode_int(MOSI3, SPIMOSI3_SET_MODE);
@@ -282,7 +283,7 @@ void spi_slave_initialize(const uint8_t mode, const uint8_t datamode, const uint
 	}
 #endif	
 #if defined(UCA0_BASE)
-	if (SPI_baseAddress == UCA0_BASE) {
+	if (SPI_slave_baseAddress== UCA0_BASE) {
 #if defined(UCA0_BASE) && defined(SPISCK10_SET_MODE)
 		pinMode_int(SCK10, SPISCK10_SET_MODE);
 		pinMode_int(MOSI10, SPIMOSI10_SET_MODE);
@@ -304,7 +305,7 @@ void spi_slave_initialize(const uint8_t mode, const uint8_t datamode, const uint
 	}
 #endif	
 #if defined(UCA1_BASE)
-	if (SPI_baseAddress == UCA1_BASE) {
+	if (SPI_slave_baseAddress== UCA1_BASE) {
 #if defined(UCA1_BASE) && defined(SPISCK11_SET_MODE)
 		pinMode_int(SCK11, SPISCK11_SET_MODE);
 		pinMode_int(MOSI11, SPIMOSI11_SET_MODE);
@@ -326,7 +327,7 @@ void spi_slave_initialize(const uint8_t mode, const uint8_t datamode, const uint
 	}
 #endif	
 #if defined(UCA2_BASE)
-	if (SPI_baseAddress == UCA2_BASE) {
+	if (SPI_slave_baseAddress== UCA2_BASE) {
 #if defined(UCA2_BASE) && defined(SPISCK12_SET_MODE)
 		pinMode_int(SCK12, SPISCK12_SET_MODE);
 		pinMode_int(MOSI12, SPIMOSI12_SET_MODE);
@@ -348,7 +349,7 @@ void spi_slave_initialize(const uint8_t mode, const uint8_t datamode, const uint
 	}
 #endif	
 #if defined(UCA3_BASE)
-	if (SPI_baseAddress == UCA3_BASE) {
+	if (SPI_slave_baseAddress== UCA3_BASE) {
 #if defined(UCA3_BASE) && defined(SPISCK13_SET_MODE)
 		pinMode_int(SCK13, SPISCK13_SET_MODE);
 		pinMode_int(MOSI13, SPIMOSI13_SET_MODE);
@@ -398,7 +399,7 @@ void spi_slave_initialize(const uint8_t mode, const uint8_t datamode, const uint
 /**
  * spi_slave_disable() - put USCI into reset mode.
  */
-void spi_disable(void)
+void spi_slave_disable(void)
 {
 	/* Wait for previous tx to complete. */
 	while (UCzSTATW & UCBUSY);
