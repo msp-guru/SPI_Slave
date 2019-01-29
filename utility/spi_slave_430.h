@@ -21,10 +21,10 @@
 #elif defined(__MSP430_HAS_USI__)
 
 #else
-    #error "SPI not supported by hardware on this chip"
+#error "SPI not supported by hardware on this chip"
 #endif
 
-extern uint16_t SPI_baseAddress;  
+extern uint16_t SPI_slave_baseAddress;
 extern uint8_t spiModule;
 
 
