@@ -16,7 +16,7 @@
 uint8_t txbuffer[10] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
 uint8_t rxbuffer[10];
 
-#define STE 17
+#define STE 8
 
 void setup()
 {
@@ -34,7 +34,7 @@ void setup()
     while (digitalRead(STE) != HIGH); // wait for High = disable -> start
 
     // initialize SPI Slave with STE low = active:
-#if 1
+#if 0
     pinMode_int(17 , PORT_SELECTION0); // STE=/CS
     SPISlave.begin(SPISlaveSettings(MODE_4WIRE_STE0, MSBFIRST, SPI_MODE0));
 #else

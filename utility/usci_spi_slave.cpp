@@ -119,13 +119,6 @@ void spi_slave_initialize(const uint8_t mode, const uint8_t datamode, const uint
 #else	
     com_mode = 0;
 #endif
- 	/* Set pins to SPI mode. */
-	pinMode_int(SCK, SPISCK_SET_MODE);
-	pinMode_int(MOSI, SPIMOSI_SET_MODE);
-	pinMode_int(MISO, SPIMISO_SET_MODE);
-	if (mode > 0){
-		pinMode_int(SS, SPISCK_SET_MODE);  /* SPISS_SET_MODE is not defined in pins_enegia.h so hope this has the same */
-	}
 #if defined(DMA_BASE) && defined(DMA0TSEL__UCA0RXIFG) && defined(DMA1TSEL__UCA0TXIFG)
 		if (com_mode & COM_MODE_DMA){
 			DMACTL0 = DMA0TSEL__UCA0RXIFG;

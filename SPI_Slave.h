@@ -101,7 +101,7 @@ extern uint8_t spiModule ;
 class SPISlaveClass
 {
   private:
-    void initPins();
+    void initPins(const uint8_t mode);
 
   public:
 
@@ -132,14 +132,14 @@ extern SPISlaveClass SPISlave;
 
 void SPISlaveClass::begin(void)
 {
-    SPISlave.initPins();
     spi_slave_initialize(MODE_4WIRE_STE0, SPI_MODE0, MSBFIRST);
+    SPISlave.initPins(MODE_4WIRE_STE0);
 }
 
 void SPISlaveClass::begin(SPISlaveSettings settings)
 {
-    SPISlave.initPins();
     spi_slave_initialize(settings._mode, settings._datamode, settings._bitOrder);
+    SPISlave.initPins(settings._mode);
 }
 
 void SPISlaveClass::begin(uint8_t module)
