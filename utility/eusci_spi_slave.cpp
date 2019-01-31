@@ -1,17 +1,17 @@
 /**
- * File: eusci_spi_slave.c - msp430 eUSCI SPI Slave implementation
- *
- * EUSCI flavor implementation by StefanSch
- * based on:
- * Copyright (c) 2012 by Rick Kimball <rick@kimballsoftware.com>
- * spi slave abstraction api for msp430
- *
- * This file is free software; you can redistribute it and/or modify
- * it under the terms of either the GNU General Public License version 2
- * or the GNU Lesser General Public License version 2.1, both as
- * published by the Free Software Foundation.
- *
- */
+    File: eusci_spi_slave.c - msp430 eUSCI SPI Slave implementation
+
+    EUSCI flavor implementation by StefanSch
+    based on:
+    Copyright (c) 2012 by Rick Kimball <rick@kimballsoftware.com>
+    spi slave abstraction api for msp430
+
+    This file is free software; you can redistribute it and/or modify
+    it under the terms of either the GNU General Public License version 2
+    or the GNU Lesser General Public License version 2.1, both as
+    published by the Free Software Foundation.
+
+*/
 
 #include <msp430.h>
 #include <stdint.h>
@@ -85,11 +85,11 @@ uint16_t SPI_slave_baseAddress = UCB0_BASE;
 #define UCzBRW       (*((volatile uint16_t *)((uint16_t)(OFS_UCBxBRW    + SPI_slave_baseAddress))))
 #define UCzBR0       (*((volatile uint8_t *) ((uint16_t)(OFS_UCBxBR0    + SPI_slave_baseAddress))))
 #define UCzBR1       (*((volatile uint8_t *) ((uint16_t)(OFS_UCBxBR1    + SPI_slave_baseAddress))))
-#define UCzSTATW     ( (spiModule < 10) ? (*((volatile uint8_t *) ((uint16_t)(OFS_UCBxSTATW  + SPI_slave_baseAddress)))) : (*((volatile uint8_t *) ((uint16_t)(OFS_UCAxSTATW  + SPI_slave_baseAddress)))) )
+#define UCzSTATW     ( (spiSlaveModule < 10) ? (*((volatile uint8_t *) ((uint16_t)(OFS_UCBxSTATW  + SPI_slave_baseAddress)))) : (*((volatile uint8_t *) ((uint16_t)(OFS_UCAxSTATW  + SPI_slave_baseAddress)))) )
 #define UCzTXBUF     (*((volatile uint8_t *) ((uint16_t)(OFS_UCBxTXBUF  + SPI_slave_baseAddress))))
 #define UCzRXBUF     (*((volatile uint8_t *) ((uint16_t)(OFS_UCBxRXBUF  + SPI_slave_baseAddress))))
-#define UCzIFG       ( (spiModule < 10) ? (*((volatile uint8_t *) ((uint16_t)(OFS_UCBxIFG    + SPI_slave_baseAddress)))) : (*((volatile uint8_t *) ((uint16_t)(OFS_UCAxIFG    + SPI_slave_baseAddress)))) )
-#define UCzIE        ( (spiModule < 10) ? (*((volatile uint8_t *) ((uint16_t)(OFS_UCBxIE     + SPI_slave_baseAddress)))) : (*((volatile uint8_t *) ((uint16_t)(OFS_UCAxIE     + SPI_slave_baseAddress)))) )
+#define UCzIFG       ( (spiSlaveModule < 10) ? (*((volatile uint8_t *) ((uint16_t)(OFS_UCBxIFG    + SPI_slave_baseAddress)))) : (*((volatile uint8_t *) ((uint16_t)(OFS_UCAxIFG    + SPI_slave_baseAddress)))) )
+#define UCzIE        ( (spiSlaveModule < 10) ? (*((volatile uint8_t *) ((uint16_t)(OFS_UCBxIE     + SPI_slave_baseAddress)))) : (*((volatile uint8_t *) ((uint16_t)(OFS_UCAxIE     + SPI_slave_baseAddress)))) )
 
 #ifndef __data16_write_addr
 #define __data16_write_addr(x,y) *(unsigned long int*)(x) = y
@@ -100,9 +100,9 @@ uint16_t SPI_slave_baseAddress = UCB0_BASE;
 #endif
 
 #if defined(DEFAULT_SPI)
-uint8_t spiModule = DEFAULT_SPI;
+uint8_t spiSlaveModule = DEFAULT_SPI;
 #else
-uint8_t spiModule = 0;
+uint8_t spiSlaveModule = 0;
 #endif
 
 /**

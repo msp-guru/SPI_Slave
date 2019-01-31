@@ -35,17 +35,17 @@ void setup()
 
     // initialize SPI Slave with STE low = active:
 #if 0
-    pinMode_int(17 , PORT_SELECTION0); // STE=/CS
+    pinMode_int(STE, PORT_SELECTION0);  // STE=/CS
     SPISlave.begin(SPISlaveSettings(MODE_4WIRE_STE0, MSBFIRST, SPI_MODE0));
 #else
-    SPISlave.begin(SPISlaveSettings(MODE_4WIRE_STE0, MSBFIRST, SPI_MODE0), 
-    13, /* Module */
-    5, /* SCK */
-    3, /* MOSI */
-    4, /* MISO */
-    STE, /* CS */
-    PORT_SELECTION0 /* PIN Mode */
-    );
+    SPISlave.begin(SPISlaveSettings(MODE_4WIRE_STE0, MSBFIRST, SPI_MODE0),
+                   13, /* Module */
+                   5, /* SCK */
+                   3, /* MOSI */
+                   4, /* MISO */
+                   STE, /* CS */
+                   PORT_SELECTION0 /* PIN Mode */
+                  );
 #endif
 }
 

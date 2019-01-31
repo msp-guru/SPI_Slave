@@ -96,7 +96,7 @@ class SPISlaveSettings
     friend class SPISlaveClass;
 };
 
-extern uint8_t spiModule ;
+extern uint8_t spiSlaveModule ;
 
 class SPISlaveClass
 {
@@ -105,7 +105,6 @@ class SPISlaveClass
 
   public:
 
-    
     inline static bool transactionDone(void);
     inline static size_t bytes_to_transmit(void);
     inline static size_t bytes_received(void);
@@ -159,7 +158,7 @@ void SPISlaveClass::begin(SPISlaveSettings settings, uint8_t module, uint8_t sck
     pinMode_int(sck,  pin_mode); // SCK
     pinMode_int(mosi, pin_mode); // MOSI
     pinMode_int(miso, pin_mode); // MISO
-    if (cs > 0) 
+    if (cs > 0)
     {
         pinMode_int(cs, pin_mode); // STE=/CS
     }

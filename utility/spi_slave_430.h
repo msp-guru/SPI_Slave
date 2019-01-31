@@ -1,17 +1,17 @@
 /*
- * spi_slave_430.h - common function declarations for different SPI Slave implementations
- *
- * spi slave implementation by StefanSch
- * based on:
- * Copyright (c) 2012 by Rick Kimball <rick@kimballsoftware.com>
- * spi abstraction api for msp430
- *
- * This file is free software; you can redistribute it and/or modify
- * it under the terms of either the GNU General Public License version 2
- * or the GNU Lesser General Public License version 2.1, both as
- * published by the Free Software Foundation.
- *
- */
+    spi_slave_430.h - common function declarations for different SPI Slave implementations
+
+    spi slave implementation by StefanSch
+    based on:
+    Copyright (c) 2012 by Rick Kimball <rick@kimballsoftware.com>
+    spi abstraction api for msp430
+
+    This file is free software; you can redistribute it and/or modify
+    it under the terms of either the GNU General Public License version 2
+    or the GNU Lesser General Public License version 2.1, both as
+    published by the Free Software Foundation.
+
+*/
 
 #ifndef _SPI_SLAVE_430_H_
 #define _SPI_SLAVE_430_H_
@@ -25,7 +25,7 @@
 #endif
 
 extern uint16_t SPI_slave_baseAddress;
-extern uint8_t spiModule;
+extern uint8_t spiSlaveModule;
 
 
 void spi_slave_initialize(const uint8_t, const uint8_t, const uint8_t order);
