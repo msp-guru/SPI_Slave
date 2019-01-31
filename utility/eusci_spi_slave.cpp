@@ -203,10 +203,11 @@ void spi_slave_initialize(const uint8_t mode, const uint8_t datamode, const uint
         dma_idx = OFS_DMA0SA - OFS_DMA0SA;
         if (com_mode & COM_MODE_DMA)
         {
-            DMACTL0 = DMA0TSEL__UCB0RXIFG;
+            DMACTL0 = (DMACTL0 & ~DMA0TSEL__DMAE0) | DMA0TSEL__UCB0RXIFG;
+
             __data16_write_addr((unsigned short)(DMA_BASE + OFS_DMA0SA), (unsigned long)&UCB0RXBUF);
 
-            DMACTL0 = DMA1TSEL__UCB0TXIFG;
+            DMACTL0 = (DMACTL0 & ~DMA1TSEL__DMAE0) | DMA1TSEL__UCB0TXIFG;
             __data16_write_addr((unsigned short)(DMA_BASE + OFS_DMA1DA), (unsigned long)&UCB0TXBUF);
         }
 #else
@@ -221,10 +222,10 @@ void spi_slave_initialize(const uint8_t mode, const uint8_t datamode, const uint
         if (com_mode & COM_MODE_DMA)
         {
             dma_idx = OFS_DMA0SA - OFS_DMA0SA;
-            DMACTL0 = DMA0TSEL__UCB1RXIFG;
+            DMACTL0 = (DMACTL0 & ~DMA0TSEL__DMAE0) | DMA0TSEL__UCB1RXIFG;
             __data16_write_addr((unsigned short)(DMA_BASE + OFS_DMA0SA), (unsigned long)&UCB1RXBUF);
 
-            DMACTL0 = DMA1TSEL__UCB1TXIFG;
+            DMACTL0 = (DMACTL0 & ~DMA1TSEL__DMAE0) | DMA1TSEL__UCB1TXIFG;
             __data16_write_addr((unsigned short)(DMA_BASE + OFS_DMA1DA), (unsigned long)&UCB1TXBUF);
         }
 #else
@@ -239,10 +240,10 @@ void spi_slave_initialize(const uint8_t mode, const uint8_t datamode, const uint
         if (com_mode & COM_MODE_DMA)
         {
             dma_idx = OFS_DMA0SA - OFS_DMA0SA;
-            DMACTL0 = DMB2TSEL__UCA0RXIFG;
+            DMACTL0 = (DMACTL0 & ~DMA0TSEL__DMAE0) | DMA0TSEL__UCB2RXIFG;
             __data16_write_addr((unsigned short)(DMA_BASE + OFS_DMA0SA), (unsigned long)&UCB2RXBUF);
 
-            DMACTL0 = DMA1TSEL__UCB2TXIFG;
+            DMACTL0 = (DMACTL0 & ~DMA1TSEL__DMAE0) | DMA1TSEL__UCB2TXIFG;
             __data16_write_addr((unsigned short)(DMA_BASE + OFS_DMA1DA), (unsigned long)&UCB2TXBUF);
         }
 #else
@@ -257,10 +258,10 @@ void spi_slave_initialize(const uint8_t mode, const uint8_t datamode, const uint
         if (com_mode & COM_MODE_DMA)
         {
             dma_idx = OFS_DMA0SA - OFS_DMA0SA;
-            DMACTL0 = DMA0TSEL__UCB3RXIFG;
+            DMACTL0 = (DMACTL0 & ~DMA0TSEL__DMAE0) | DMA0TSEL__UCB3RXIFG;
             __data16_write_addr((unsigned short)(DMA_BASE + OFS_DMA0SA), (unsigned long)&UCB3RXBUF);
 
-            DMACTL0 = DMA1TSEL__UCB3TXIFG;
+            DMACTL0 = (DMACTL0 & ~DMA1TSEL__DMAE0) | DMA1TSEL__UCB3TXIFG;
             __data16_write_addr((unsigned short)(DMA_BASE + OFS_DMA1DA), (unsigned long)&UCB3TXBUF);
         }
 #else
@@ -275,10 +276,10 @@ void spi_slave_initialize(const uint8_t mode, const uint8_t datamode, const uint
         if (com_mode & COM_MODE_DMA)
         {
             dma_idx = OFS_DMA0SA - OFS_DMA0SA;
-            DMACTL0 = DMA0TSEL__UCA0RXIFG;
+            DMACTL0 = (DMACTL0 & ~DMA0TSEL__DMAE0) | DMA0TSEL__UCA0RXIFG;
             __data16_write_addr((unsigned short)(DMA_BASE + OFS_DMA0SA), (unsigned long)&UCA0RXBUF);
 
-            DMACTL0 = DMA1TSEL__UCA0TXIFG;
+            DMACTL0 = (DMACTL0 & ~DMA1TSEL__DMAE0) | DMA1TSEL__UCA0TXIFG;
             __data16_write_addr((unsigned short)(DMA_BASE + OFS_DMA1DA), (unsigned long)&UCA0TXBUF);
         }
 #else
@@ -293,10 +294,10 @@ void spi_slave_initialize(const uint8_t mode, const uint8_t datamode, const uint
         if (com_mode & COM_MODE_DMA)
         {
             dma_idx = OFS_DMA0SA - OFS_DMA0SA;
-            DMACTL0 = DMA1TSEL__UCA0RXIFG;
+            DMACTL0 = (DMACTL0 & ~DMA0TSEL__DMAE0) | DMA0TSEL__UCA0RXIFG;
             __data16_write_addr((unsigned short)(DMA_BASE + OFS_DMA0SA), (unsigned long)&UCA1RXBUF);
 
-            DMACTL0 = DMA1TSEL__UCA1TXIFG;
+            DMACTL0 = (DMACTL0 & ~DMA1TSEL__DMAE0) | DMA1TSEL__UCA1TXIFG;
             __data16_write_addr((unsigned short)(DMA_BASE + OFS_DMA1DA), (unsigned long)&UCA1TXBUF);
         }
 #else
@@ -311,10 +312,10 @@ void spi_slave_initialize(const uint8_t mode, const uint8_t datamode, const uint
         if (com_mode & COM_MODE_DMA)
         {
             dma_idx = OFS_DMA3SA - OFS_DMA0SA;
-            DMACTL1 = DMA3TSEL__UCA2RXIFG;
+            DMACTL1 = (DMACTL1 & ~DMA3TSEL__DMAE0) | DMA3TSEL__UCA2RXIFG;
             __data16_write_addr((unsigned short)(DMA_BASE + OFS_DMA3SA), (unsigned long)&UCA2RXBUF);
 
-            DMACTL2 = DMA4TSEL__UCA2TXIFG;
+            DMACTL2 = (DMACTL2 & ~DMA4TSEL__DMAE0) | DMA4TSEL__UCA2TXIFG;
             __data16_write_addr((unsigned short)(DMA_BASE + OFS_DMA4DA), (unsigned long)&UCA2TXBUF);
         }
 #else
@@ -329,10 +330,10 @@ void spi_slave_initialize(const uint8_t mode, const uint8_t datamode, const uint
         if (com_mode & COM_MODE_DMA)
         {
             dma_idx = OFS_DMA3SA - OFS_DMA0SA;
-            DMACTL1 = DMA3TSEL__UCA3RXIFG;
+            DMACTL1 = (DMACTL1 & ~DMA3TSEL__DMAE0) | DMA3TSEL__UCA3RXIFG;
             __data16_write_addr((unsigned short)(DMA_BASE + OFS_DMA3SA), (unsigned long)&UCA3RXBUF);
 
-            DMACTL2 = DMA4TSEL__UCA3TXIFG;
+            DMACTL2 = (DMACTL2 & ~DMA4TSEL__DMAE0) | DMA4TSEL__UCA3TXIFG;
             __data16_write_addr((unsigned short)(DMA_BASE + OFS_DMA4DA), (unsigned long)&UCA3TXBUF);
         }
 #else
@@ -345,10 +346,10 @@ void spi_slave_initialize(const uint8_t mode, const uint8_t datamode, const uint
     if (com_mode & COM_MODE_DMA)
     {
         dma_idx = OFS_DMA0SA - OFS_DMA0SA;
-        DMACTL0 = DMA0TSEL__UCA0RXIFG;
+        DMACTL0 = (DMACTL0 & ~DMA0TSEL__DMAE0) | DMA0TSEL__UCA0RXIFG;
         __data16_write_addr((unsigned short)(DMA_BASE + OFS_DMA0SA), (unsigned long)&UCA0RXBUF);
 
-        DMACTL0 = DMA1TSEL__UCA0TXIFG;
+        DMACTL0 = (DMACTL0 & ~DMA1TSEL__DMAE0) | DMA1TSEL__UCA0TXIFG;
         __data16_write_addr((unsigned short)(DMA_BASE + OFS_DMA1DA), (unsigned long)&UCA0TXBUF);
     }
 #else

@@ -39,10 +39,10 @@
  * value described in Motorola documentation.
  */
 
-#define SPI_MODE_0 (UCCKPH)			    /* CPOL=0 CPHA=0 */
-#define SPI_MODE_1 (0)                 	/* CPOL=0 CPHA=1 */
-#define SPI_MODE_2 (UCCKPL | UCCKPH)    /* CPOL=1 CPHA=0 */
-#define SPI_MODE_3 (UCCKPL)			    /* CPOL=1 CPHA=1 */
+#define SPI_MODE_0 (UCCKPH)                /* CPOL=0 CPHA=0 */
+#define SPI_MODE_1 (0)                     /* CPOL=0 CPHA=1 */
+#define SPI_MODE_2 (UCCKPL | UCCKPH)       /* CPOL=1 CPHA=0 */
+#define SPI_MODE_3 (UCCKPL)                /* CPOL=1 CPHA=1 */
 
 #define SPI_MODE_MASK (UCCKPL | UCCKPH)
 
@@ -69,20 +69,18 @@ const uint8_t dummy = 0xFF;
 
 void spi_slave_initialize(const uint8_t mode, const uint8_t datamode, const uint8_t order)
 {
-	UCB0CTL1 = UCSWRST;      // Put USCI in reset mode, source USCI clock from SMCLK
-	UCB0CTL0 = SPI_MODE_0 | UCMSB | UCSYNC | UCMODE_1;  // Use SPI MODE 0 - CPOL=0 CPHA=0 - 4 wire STE = 1
 
     /* Calling this dummy function prevents the linker
      * from stripping the USCI interupt vectors.*/ 
     usci_isr_install();
-	
-	/* Put USCI in reset mode, source USCI clock from SMCLK. */
-	UCB0CTL1 = UCSWRST;
+    
+    /* Put USCI in reset mode, source USCI clock from SMCLK. */
+    UCB0CTL1 = UCSWRST;
 
-	/* SPI in slave MODE 0 - CPOL=0 SPHA=0. - 3 wire STE */
-	UCB0CTL0 |= UCSYNC;
-	
-	UCB0CTL0 = (UCB0CTL0 & ~UCMSB) | ((order == 1 /*MSBFIRST*/) ? UCMSB : 0); /* MSBFIRST = 1 */
+    /* SPI in slave MODE 0 - CPOL=0 SPHA=0. - 3 wire STE */
+    UCB0CTL0 = SPI_MODE_0 | UCMSB | UCSYNC;  // Use SPI MODE 0 - CPOL=0 CPHA=0 - 4 wire STE = 1
+    
+    UCB0CTL0 = (UCB0CTL0 & ~UCMSB) | ((order == 1 /*MSBFIRST*/) ? UCMSB : 0); /* MSBFIRST = 1 */
 
     switch(mode) {
     case 0: /* 3 wire  */
@@ -116,21 +114,21 @@ void spi_slave_initialize(const uint8_t mode, const uint8_t datamode, const uint
     }
 #if defined(DMA_BASE)
     com_mode = COM_MODE_DMA;
-#else	
+#else    
     com_mode = 0;
 #endif
-#if defined(DMA_BASE) && defined(DMA0TSEL__UCA0RXIFG) && defined(DMA1TSEL__UCA0TXIFG)
-		if (com_mode & COM_MODE_DMA){
-			DMACTL0 = DMA0TSEL__UCA0RXIFG;
-			__data16_write_addr((unsigned short)(DMA0SA),(unsigned long)&UCA0RXBUF);
+#if defined(DMA_BASE) && defined(DMA0TSEL__USCIB0RX) && defined(DMA1TSEL__USCIB0RX)
+        if (com_mode & COM_MODE_DMA){
+            DMACTL0 = (DMACTL0 & ~DMA0TSEL__DMAE0) | DMA0TSEL__USCIB0RX;
+            __data16_write_addr((unsigned short)(&DMA0SA),(unsigned long)&UCB0RXBUF);
 
-			DMACTL0 = DMA1TSEL__UCA0TXIFG;
-			__data16_write_addr((unsigned short)(DMA1DA),(unsigned long)&UCA0TXBUF); 
-		}
+            DMACTL0 = (DMACTL0 & ~DMA1TSEL__DMAE0) | DMA1TSEL__USCIB0TX;
+            __data16_write_addr((unsigned short)(&DMA1DA),(unsigned long)&UCB0TXBUF);
+        }
 #endif
 
-	/* Release USCI for operation. */
-	UCB0CTL1 &= ~UCSWRST;			    // release USCI for operation
+    /* Release USCI for operation. */
+    UCB0CTL1 &= ~UCSWRST;                // release USCI for operation
 }
 
 
@@ -139,10 +137,10 @@ void spi_slave_initialize(const uint8_t mode, const uint8_t datamode, const uint
  */
 void spi_slave_disable(void)
 {
-	/* Wait for previous tx to complete. */
-	while (UCB0STAT & UCBUSY);
-	/* Put USCI in reset mode. */
-	UCB0CTL1 |= UCSWRST;
+    /* Wait for previous tx to complete. */
+    while (UCB0STAT & UCBUSY);
+    /* Put USCI in reset mode. */
+    UCB0CTL1 |= UCSWRST;
 }
 
 /**
@@ -155,35 +153,35 @@ void spi_slave_transfer(uint8_t *rxbuf, uint8_t *txbuf, uint16_t count)
     txcount = count;
     rxrecived = 0;
 #ifdef DMA_BASE
-	if (com_mode & COM_MODE_DMA){
+    if (com_mode & COM_MODE_DMA){
         DMA0CTL= 0;
         DMA1CTL = 0;
-	    /* Toggle USCI reset mode to flush TX pipe */
-	    UCB0CTL1 |= UCSWRST;
+        /* Toggle USCI reset mode to flush TX pipe */
+        UCB0CTL1 |= UCSWRST;
         UCB0CTL1 &= ~UCSWRST;
-		// RXIFG
-		__data16_write_addr((unsigned short)(DMA0DA),(unsigned long)rxbuf); 
-		DMA0SZ  = count;   
-		DMA0CTL = DMADT_0 + DMADSTINCR_3 + DMASBDB + DMALEVEL + DMAEN;
+        // RXIFG
+        __data16_write_addr((unsigned short)(&DMA0DA),(unsigned long)rxbuf);
+        DMA0SZ  = count;   
+        DMA0CTL = DMADT_0 + DMADSTINCR_3 + DMASBDB + DMALEVEL + DMAEN;
 
-		//TXIFG;
-		__data16_write_addr((unsigned short)(DMA1SA),(unsigned long)txbuf);
-		DMA1SZ  = count;   
-		DMA1CTL = DMADT_0 + DMASRCINCR_3 + DMASBDB + DMALEVEL + DMAEN;
-	}
-	else
+        //TXIFG;
+        __data16_write_addr((unsigned short)(&DMA1SA),(unsigned long)txbuf);
+        DMA1SZ  = count;   
+        DMA1CTL = DMADT_0 + DMASRCINCR_3 + DMASBDB + DMALEVEL + DMAEN;
+    }
+    else
 #endif
-	{
-		rxptr = rxbuf;
-		txptr = txbuf;
-		com_mode &= ~COM_MODE_RX;
-		while ((UCB0IFG & UCTXIFG) && txcount)
-		{
-			*(&(UCB0TXBUF)) = *txptr++;  /* put in first character */
-			txcount--;
-		}
-		UCB0IE |= UCRXIE;  /* need to receive data to transmit */
-	}
+    {
+        rxptr = rxbuf;
+        txptr = txbuf;
+        com_mode &= ~COM_MODE_RX;
+        while ((UCB0IFG & UCTXIFG) && txcount)
+        {
+            *(&(UCB0TXBUF)) = *txptr++;  /* put in first character */
+            txcount--;
+        }
+        UCB0IE |= UCRXIE;  /* need to receive data to transmit */
+    }
 }
 
 /**
@@ -263,17 +261,17 @@ int spi_data_done(void)
 
 void spi_rx_isr(uint8_t offset)
 {
-	uint8_t temp;
+    uint8_t temp;
     temp = *txptr; // store in case tx and rx ptr are identical
-	if (rxcount){
-		if (rxptr != 0){
-			*rxptr++ = *(&(UCB0RXBUF));
-	        rxcount--;
-	        rxrecived++;
-		}
-	}else{
-	    UCB0IE &= ~UCRXIE;  /* disable interrupt */
-	}
+    if (rxcount){
+        if (rxptr != 0){
+            *rxptr++ = *(&(UCB0RXBUF));
+            rxcount--;
+            rxrecived++;
+        }
+    }else{
+        UCB0IE &= ~UCRXIE;  /* disable interrupt */
+    }
     if (txcount){
         if (txptr != 0){
             *(&(UCB0TXBUF)) = temp;
@@ -283,8 +281,7 @@ void spi_rx_isr(uint8_t offset)
             txcount--;
         }
     }
-	
 }
 
 #endif
-	
+    
